@@ -21,13 +21,12 @@
 
 package com.spotify.helios.master;
 
-import ch.qos.logback.access.jetty.RequestLogImpl;
-
 import com.google.common.io.Resources;
 import com.google.common.util.concurrent.AbstractIdleService;
 
 import com.spotify.helios.master.http.VersionResponseFilter;
 import com.spotify.helios.master.metrics.ReportingResourceMethodDispatchAdapter;
+import com.spotify.helios.master.resources.DashboardResource;
 import com.spotify.helios.master.resources.HostsResource;
 import com.spotify.helios.master.resources.JobsResource;
 import com.spotify.helios.master.resources.MastersResource;
@@ -49,11 +48,13 @@ import com.spotify.helios.servicescommon.coordination.ZooKeeperModelReporter;
 import com.spotify.helios.servicescommon.statistics.Metrics;
 import com.spotify.helios.servicescommon.statistics.MetricsImpl;
 import com.spotify.helios.servicescommon.statistics.NoopMetrics;
+import com.yammer.dropwizard.assets.AssetServlet;
 import com.yammer.dropwizard.config.ConfigurationException;
 import com.yammer.dropwizard.config.Environment;
 import com.yammer.dropwizard.config.RequestLogConfiguration;
 import com.yammer.dropwizard.config.ServerFactory;
 import com.yammer.dropwizard.lifecycle.ServerLifecycleListener;
+import com.yammer.dropwizard.views.ViewMessageBodyWriter;
 import com.yammer.metrics.core.MetricsRegistry;
 
 import org.apache.curator.RetryPolicy;
@@ -67,6 +68,8 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
+
+import ch.qos.logback.access.jetty.RequestLogImpl;
 
 import static com.google.common.base.Charsets.UTF_8;
 import static com.spotify.helios.servicescommon.ServiceRegistrars.createServiceRegistrar;
@@ -153,6 +156,14 @@ public class MasterService extends AbstractIdleService {
     environment.addResource(new HostsResource(model));
     environment.addResource(new MastersResource(model));
     environment.addResource(new VersionResource());
+
+    // Dashboard
+    environment.addProvider(ViewMessageBodyWriter.class);
+    final String assetsPath = "/assets/";
+    environment.addServlet(new AssetServlet(assetsPath, assetsPath, null), assetsPath + "*");
+    environment.addResource(new DashboardResource(model));
+
+    // HTTP Server
     final RequestLogConfiguration requestLogConfiguration =
         config.getHttpConfiguration().getRequestLogConfiguration();
     requestLogConfiguration.getConsoleConfiguration().setEnabled(false);
