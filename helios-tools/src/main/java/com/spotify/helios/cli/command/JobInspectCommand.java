@@ -24,7 +24,6 @@ package com.spotify.helios.cli.command;
 import com.google.common.base.Function;
 import com.google.common.base.Joiner;
 import com.google.common.base.Strings;
-import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Ordering;
 
@@ -35,17 +34,20 @@ import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.PortMapping;
 import com.spotify.helios.common.descriptors.ServicePorts;
 
+import net.sourceforge.argparse4j.inf.Argument;
 import net.sourceforge.argparse4j.inf.Namespace;
 import net.sourceforge.argparse4j.inf.Subparser;
 
+import java.io.IOException;
 import java.io.PrintStream;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 import java.util.concurrent.ExecutionException;
 
 import static com.google.common.base.CharMatcher.WHITESPACE;
 
-public class JobInspectCommand extends WildcardJobCommand {
+public class JobInspectCommand extends ControlCommand {
 
   private static final Function<String, String> QUOTE = new Function<String, String>() {
     @Override
@@ -77,35 +79,59 @@ public class JobInspectCommand extends WildcardJobCommand {
         }
       };
 
+  private final Argument patternArg;
+
   public JobInspectCommand(final Subparser parser) {
     super(parser);
+
+    patternArg = parser.addArgument("pattern")
+        .nargs("?")
+        .help("Job reference to filter on");
 
     parser.help("print the configuration of a job");
   }
 
   @Override
-  protected int runWithJobId(final Namespace options, final HeliosClient client,
-                             final PrintStream out,
-                             final boolean json, final JobId jobId)
-      throws ExecutionException, InterruptedException {
+  int run(final Namespace options, final HeliosClient client, final PrintStream out,
+          final boolean json)
+      throws ExecutionException, InterruptedException, IOException {
 
-    final Map<JobId, Job> jobs = client.jobs(jobId.toString()).get();
-    if (jobs.size() == 0) {
-      out.printf("Unknown job: %s%n", jobId);
-      return 1;
+    final String pattern = options.getString(patternArg.getDest());
+
+    final Map<JobId, Job> jobs;
+    if (pattern == null) {
+      jobs = client.jobs().get();
+    } else {
+      jobs = client.jobs(pattern).get();
     }
 
-    final Job job = Iterables.getOnlyElement(jobs.values());
+    if (jobs.size() == 0) {
+      if (pattern == null) {
+        out.println("No jobs found");
+        return 0;
+      } else {
+        out.printf("No jobs found for pattern: %s%n", pattern);
+        return 1;
+      }
+    }
 
     if (json) {
-      out.println(Json.asPrettyStringUnchecked(job));
+      out.println(Json.asPrettyStringUnchecked(jobs));
     } else {
-      out.printf("Id: %s%n", job.getId());
-      out.printf("Image: %s%n", job.getImage());
-      out.printf("Command: %s%n", quote(job.getCommand()));
-      printMap(out, "Env:   ", QUOTE, job.getEnv());
-      printMap(out, "Ports: ", FORMAT_PORTMAPPING, job.getPorts());
-      printMap(out, "Reg: ", FORMAT_SERVICE_PORTS, job.getRegistration());
+      final Map<JobId, Job> sorted = new TreeMap<>(jobs);
+      boolean first = true;
+      for (final Job job : sorted.values()) {
+        if (!first) {
+          out.println();
+        }
+        first = false;
+        out.printf("Id: %s%n", job.getId());
+        out.printf("Image: %s%n", job.getImage());
+        out.printf("Command: %s%n", quote(job.getCommand()));
+        printMap(out, "Env:   ", QUOTE, job.getEnv());
+        printMap(out, "Ports: ", FORMAT_PORTMAPPING, job.getPorts());
+        printMap(out, "Reg: ", FORMAT_SERVICE_PORTS, job.getRegistration());
+      }
     }
 
     return 0;
