@@ -119,8 +119,14 @@ public class Agent extends AbstractIdleService {
     for (final Entry<JobId, Execution> entry : executions.get().entrySet()) {
       final Execution execution = entry.getValue();
       final Job job = execution.getJob();
-      if (execution.getPorts() != null) {
-        createSupervisor(job, execution.getPorts());
+      if (execution.getPorts() == null) {
+        continue;
+      }
+      final TaskStatus taskStatus = model.getTaskStatus(job.getId());
+      final TaskStatus.State state = taskStatus == null ? null : taskStatus.getState();
+      final String containerId = (taskStatus == null) ? null : taskStatus.getContainerId();
+      if (state != TaskStatus.State.EXITED) {
+        createSupervisor(job, containerId, execution.getPorts());
       }
     }
     model.addListener(modelListener);
@@ -142,10 +148,9 @@ public class Agent extends AbstractIdleService {
    *
    * @param job The job .
    */
-  private Supervisor createSupervisor(final Job job, final Map<String, Integer> portAllocation) {
+  private Supervisor createSupervisor(final Job job, final String containerId,
+                                      final Map<String, Integer> portAllocation) {
     log.debug("creating job supervisor: {}", job);
-    final TaskStatus taskStatus = model.getTaskStatus(job.getId());
-    final String containerId = (taskStatus == null) ? null : taskStatus.getContainerId();
     final Supervisor supervisor = supervisorFactory.create(job, containerId, portAllocation,
                                                            supervisorListener);
     supervisors.put(job.getId(), supervisor);
@@ -217,6 +222,11 @@ public class Agent extends AbstractIdleService {
         final Task task = entry.getValue();
         final Execution existing = newExecutions.get(jobId);
         if (existing != null) {
+          final TaskStatus taskStatus = model.getTaskStatus(jobId);
+          // taskStatus.getJob().isRunOnce()
+          if (taskStatus.getState() == TaskStatus.State.EXITED) {
+            continue;
+          }
           if (existing.getGoal() != task.getGoal()) {
             final Execution execution = existing.withGoal(task.getGoal());
             newExecutions.put(jobId, execution);
@@ -288,7 +298,12 @@ public class Agent extends AbstractIdleService {
         if (supervisor == null &&
             execution.getGoal() == START &&
             execution.getPorts() != null) {
-          createSupervisor(execution.getJob(), execution.getPorts());
+          final TaskStatus taskStatus = model.getTaskStatus(jobId);
+          final TaskStatus.State state = taskStatus == null ? null : taskStatus.getState();
+          final String containerId = (taskStatus == null) ? null : taskStatus.getContainerId();
+          if (!execution.getJob().getRunOnce() || state != TaskStatus.State.EXITED) {
+            createSupervisor(execution.getJob(), containerId, execution.getPorts());
+          }
         }
       }
 

@@ -97,7 +97,7 @@ public class Supervisor {
     if (this.goal == goal) {
       return;
     }
-    log.debug("Supervisor {}: setting goal: {}", job.getId(), goal);
+    log.error("Supervisor {}: setting goal: {}", job.getId(), goal);
     this.goal = goal;
     statusUpdater.setGoal(goal);
     switch (goal) {
@@ -325,7 +325,9 @@ public class Supervisor {
       }
 
       // Restart the task
-      startAfter(restartPolicy.delay(monitor.throttle()));
+      if (!job.getRunOnce()) {
+        startAfter(restartPolicy.delay(monitor.throttle()));
+      }
     }
 
     private void startAfter(final long delay) {

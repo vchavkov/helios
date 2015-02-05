@@ -79,6 +79,7 @@ public class JobCreateCommand extends ControlCommand {
   private final Argument gracePeriodArg;
   private final Argument volumeArg;
   private final Argument expiresArg;
+  private final Argument runOnceArg;
 
   public JobCreateCommand(final Subparser parser) {
     super(parser);
@@ -160,6 +161,10 @@ public class JobCreateCommand extends ControlCommand {
         .help("An ISO-8601 string representing the date/time when this job should expire. The " +
               "job will be undeployed from all hosts and removed at this time. E.g. " +
               "2014-06-01T12:00:00Z");
+
+    runOnceArg = parser.addArgument("-o", "--run-once")
+        .action(storeTrue())
+        .help("Run the job one time only");
   }
 
   @Override
@@ -371,6 +376,12 @@ public class JobCreateCommand extends ControlCommand {
     if (expires != null) {
       // Use DateTime to parse the ISO-8601 string
       builder.setExpires(new DateTime(expires).toDate());
+    }
+
+    final Boolean runOnce = options.getBoolean(runOnceArg.getDest());
+    if (runOnce != null) {
+      // Use DateTime to parse the ISO-8601 string
+      builder.setRunOnce(runOnce);
     }
 
     builder.setToken(options.getString(tokenArg.getDest()));

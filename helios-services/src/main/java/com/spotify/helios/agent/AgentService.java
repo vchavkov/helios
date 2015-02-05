@@ -84,6 +84,8 @@ import static java.lang.management.ManagementFactory.getOperatingSystemMXBean;
 import static java.lang.management.ManagementFactory.getRuntimeMXBean;
 import static java.nio.file.StandardOpenOption.CREATE;
 import static java.nio.file.StandardOpenOption.WRITE;
+import static net.logstash.logback.marker.Markers.append;
+import static net.logstash.logback.marker.Markers.appendArray;
 
 /**
  * The Helios agent.
@@ -118,6 +120,8 @@ public class AgentService extends AbstractIdleService implements Managed {
    */
   public AgentService(final AgentConfig config, final Environment environment)
       throws ConfigurationException, InterruptedException {
+    log.error("TEST");
+    Object o = LoggerFactory.getLogger("logstash");
     // Create state directory, if necessary
     final Path stateDirectory = config.getStateDirectory().toAbsolutePath().normalize();
     if (!Files.exists(stateDirectory)) {

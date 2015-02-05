@@ -52,7 +52,7 @@ public class IdMismatchJobCreateTest extends SystemTestBase {
         new Job(JobId.fromString("bad:job:deadbeef"), "busyBox", IDLE_COMMAND,
                 EMPTY_ENV, EMPTY_RESOURCES, EMPTY_PORTS, EMPTY_REGISTRATION,
                 EMPTY_GRACE_PERIOD, EMPTY_VOLUMES, EMPTY_EXPIRES,
-                EMPTY_REGISTRATION_DOMAIN, EMPTY_CREATING_USER, EMPTY_TOKEN)).get();
+                EMPTY_REGISTRATION_DOMAIN, EMPTY_CREATING_USER, EMPTY_TOKEN, false)).get();
 
     // TODO (dano): Maybe this should be ID_MISMATCH but then JobValidator must become able to
     // TODO (dano): communicate that

@@ -111,6 +111,7 @@ public class Job extends Descriptor implements Comparable<Job> {
   private final String registrationDomain;
   private final String creatingUser;
   private final String token;
+  private final boolean runOnce;
 
   /**
    * Create a Job.
@@ -143,7 +144,8 @@ public class Job extends Descriptor implements Comparable<Job> {
              @JsonProperty("expires") @Nullable final Date expires,
              @JsonProperty("registrationDomain") @Nullable String registrationDomain,
              @JsonProperty("creatingUser") @Nullable String creatingUser,
-             @JsonProperty("token") @Nullable String token) {
+             @JsonProperty("token") @Nullable String token,
+             @JsonProperty("runOnce") @Nullable Boolean runOnce) {
     this.id = id;
     this.image = image;
 
@@ -160,6 +162,7 @@ public class Job extends Descriptor implements Comparable<Job> {
         .or(EMPTY_REGISTRATION_DOMAIN);
     this.creatingUser = Optional.fromNullable(creatingUser).orNull();
     this.token = Optional.fromNullable(token).or(EMPTY_TOKEN);
+    this.runOnce = Optional.fromNullable(runOnce).or(false);
   }
 
   private Job(final JobId id, final Builder.Parameters p) {
@@ -178,6 +181,7 @@ public class Job extends Descriptor implements Comparable<Job> {
         .or(EMPTY_REGISTRATION_DOMAIN);
     this.creatingUser = p.creatingUser;
     this.token = p.token;
+    this.runOnce = p.runOnce;
   }
 
   public JobId getId() {
@@ -228,7 +232,13 @@ public class Job extends Descriptor implements Comparable<Job> {
     return creatingUser;
   }
 
-  public String getToken() { return token; }
+  public String getToken() {
+    return token;
+  }
+
+  public boolean getRunOnce() {
+    return runOnce;
+  }
 
   public static Builder newBuilder() {
     return new Builder();
@@ -239,79 +249,6 @@ public class Job extends Descriptor implements Comparable<Job> {
     return id.compareTo(o.getId());
   }
 
-  @Override
-  public boolean equals(final Object o) {
-    if (this == o) {
-      return true;
-    }
-    if (o == null || getClass() != o.getClass()) {
-      return false;
-    }
-
-    final Job job = (Job) o;
-
-    if (command != null ? !command.equals(job.command) : job.command != null) {
-      return false;
-    }
-    if (env != null ? !env.equals(job.env) : job.env != null) {
-      return false;
-    }
-    if (resources != null ? !resources.equals(job.resources) : job.resources != null) {
-      return false;
-    }
-    if (expires != null ? !expires.equals(job.expires) : job.expires != null) {
-      return false;
-    }
-    if (id != null ? !id.equals(job.id) : job.id != null) {
-      return false;
-    }
-    if (image != null ? !image.equals(job.image) : job.image != null) {
-      return false;
-    }
-    if (ports != null ? !ports.equals(job.ports) : job.ports != null) {
-      return false;
-    }
-    if (registration != null ? !registration.equals(job.registration) : job.registration != null) {
-      return false;
-    }
-    if (registrationDomain != null
-        ? !registrationDomain.equals(job.registrationDomain)
-        : job.registrationDomain != null) {
-      return false;
-    }
-    if (gracePeriod != null ? !gracePeriod.equals(job.gracePeriod) : job.gracePeriod != null) {
-      return false;
-    }
-    if (volumes != null ? !volumes.equals(job.volumes) : job.volumes != null) {
-      return false;
-    }
-    if (creatingUser != null ? !creatingUser.equals(job.creatingUser) : job.creatingUser != null) {
-      return false;
-    }
-    if (!token.equals(job.token)) {
-      return false;
-    }
-
-    return true;
-  }
-
-  @Override
-  public int hashCode() {
-    int result = id != null ? id.hashCode() : 0;
-    result = 31 * result + (image != null ? image.hashCode() : 0);
-    result = 31 * result + (expires != null ? expires.hashCode() : 0);
-    result = 31 * result + (command != null ? command.hashCode() : 0);
-    result = 31 * result + (env != null ? env.hashCode() : 0);
-    result = 31 * result + (resources != null ? resources.hashCode() : 0);
-    result = 31 * result + (ports != null ? ports.hashCode() : 0);
-    result = 31 * result + (registration != null ? registration.hashCode() : 0);
-    result = 31 * result + (registrationDomain != null ? registrationDomain.hashCode() : 0);
-    result = 31 * result + (gracePeriod != null ? gracePeriod.hashCode() : 0);
-    result = 31 * result + (volumes != null ? volumes.hashCode() : 0);
-    result = 31 * result + (creatingUser != null ? creatingUser.hashCode() : 0);
-    result = 31 * result + token.hashCode();
-    return result;
-  }
 
   @Override
   public String toString() {
@@ -328,6 +265,7 @@ public class Job extends Descriptor implements Comparable<Job> {
         .add("registrationDomain", registrationDomain)
         .add("creatingUser", creatingUser)
         .add("token", token)
+        .add("runOnce", runOnce)
         .toString();
   }
 
@@ -350,7 +288,42 @@ public class Job extends Descriptor implements Comparable<Job> {
         .setExpires(expires)
         .setRegistrationDomain(registrationDomain)
         .setCreatingUser(creatingUser)
-        .setToken(token);
+        .setToken(token)
+        .setRunOnce(runOnce);
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+
+    Job that = (Job) o;
+
+    return Objects.equal(this.id, that.id) &&
+           Objects.equal(this.image, that.image) &&
+           Objects.equal(this.command, that.command) &&
+           Objects.equal(this.env, that.env) &&
+           Objects.equal(this.resources, that.resources) &&
+           Objects.equal(this.ports, that.ports) &&
+           Objects.equal(this.registration, that.registration) &&
+           Objects.equal(this.gracePeriod, that.gracePeriod) &&
+           Objects.equal(this.volumes, that.volumes) &&
+           Objects.equal(this.expires, that.expires) &&
+           Objects.equal(this.registrationDomain, that.registrationDomain) &&
+           Objects.equal(this.creatingUser, that.creatingUser) &&
+           Objects.equal(this.token, that.token) &&
+           Objects.equal(this.runOnce, that.runOnce);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hashCode(id, image, command, env, resources, ports,
+                            registration, gracePeriod, volumes, expires, registrationDomain,
+                            creatingUser, token, runOnce);
   }
 
   public static class Builder implements Cloneable {
@@ -383,6 +356,7 @@ public class Job extends Descriptor implements Comparable<Job> {
       public Date expires;
       public String creatingUser;
       public String token;
+      public boolean runOnce;
 
       private Parameters() {
         this.command = EMPTY_COMMAND;
@@ -395,6 +369,7 @@ public class Job extends Descriptor implements Comparable<Job> {
         this.registrationDomain = EMPTY_REGISTRATION_DOMAIN;
         this.creatingUser = EMPTY_CREATING_USER;
         this.token = EMPTY_TOKEN;
+        this.runOnce = false;
       }
 
       private Parameters(final Parameters p) {
@@ -412,6 +387,7 @@ public class Job extends Descriptor implements Comparable<Job> {
         this.registrationDomain = p.registrationDomain;
         this.creatingUser = p.creatingUser;
         this.token = p.token;
+        this.runOnce = p.runOnce;
       }
     }
 
@@ -513,6 +489,15 @@ public class Job extends Descriptor implements Comparable<Job> {
     public Builder setExpires(final Date expires) {
       p.expires = expires;
       return this;
+    }
+
+    public Builder setRunOnce(final boolean runOnce) {
+      p.runOnce = runOnce;
+      return this;
+    }
+
+    public boolean getRunOnce() {
+      return p.runOnce;
     }
 
     public String getName() {
