@@ -82,39 +82,71 @@
                       <structure name="JaCoCo">
                         <group name="helios-client">
                           <classfiles>
-                            <fileset dir="../helios-client/target/classes"/>
+                            <fileset dir="../helios-client/target/classes">
+                              <include name="**/DeploymentGroupCreateCommand*"/>
+                              <include name="**/DeploymentGroupInspectCommand*"/>
+                              <include name="**/DeploymentGroupListCommand*"/>
+                              <include name="**/DeploymentGroupRemoveCommand*"/>
+                              <include name="**/DeploymentGroupStatusCommand*"/>
+                              <include name="**/DeploymentGroupInspectCommand*"/>
+                              <include name="**/DeploymentGroupWatchCommand*"/>
+                              <include name="**/RollingUpdateAbortCommand*"/>
+                              <include name="**/RollingUpdateCommand*"/>
+                              <include name="**/Deployment*"/>
+                              <include name="**/DeploymentGroup*"/>
+                              <include name="**/DeploymentGroupResource*"/>
+                              <include name="**/DeploymentGroupStatus*"/>
+                              <include name="**/RolloutOptions*"/>
+                              <include name="**/RolloutTask*"/>
+                              <include name="**/CreateDeploymentGroupResponse*"/>
+                              <include name="**/DeploymentGroupStatusResponse*"/>
+                              <include name="**/RemoveDeploymentGroupResponse*"/>
+                              <include name="**/RollingUpdateRequest*"/>
+                              <include name="**/RollingUpdateResponse*"/>
+                              <include name="**/DeploymentGroupDoesNotExistException*"/>
+                              <include name="**/DeploymentGroupExistsException*"/>
+                              <include name="**/RollingUpdateResponse*"/>
+                            </fileset>
                           </classfiles>
                           <sourcefiles>
                             <fileset dir="../helios-client/src"/>
                           </sourcefiles>
                         </group>
-                        <group name="helios-service-registration">
-                          <classfiles>
-                            <fileset dir="../helios-service-registration/target/classes"/>
-                          </classfiles>
-                          <sourcefiles>
-                            <fileset dir="../helios-service-registration/src"/>
-                          </sourcefiles>
-                        </group>
                         <group name="helios-services">
                           <classfiles>
-                            <fileset dir="../helios-services/target/classes"/>
+                            <fileset dir="../helios-services/target/classes/com/spotify/helios/rollingupdate"/>
                           </classfiles>
                           <sourcefiles>
-                            <fileset dir="../helios-services/src"/>
-                          </sourcefiles>
-                        </group>
-                        <group name="helios-testing">
-                          <classfiles>
-                            <fileset dir="../helios-testing/target/classes"/>
-                          </classfiles>
-                          <sourcefiles>
-                            <fileset dir="../helios-testing/src"/>
+                            <fileset dir="../helios-services/src/main/java/com/spotify/helios/rollingupdate"/>
                           </sourcefiles>
                         </group>
                         <group name="helios-tools">
                           <classfiles>
-                            <fileset dir="../helios-tools/target/classes"/>
+                            <fileset dir="../helios-tools/target/classes">
+                              <include name="**/DeploymentGroupCreateCommand*"/>
+                              <include name="**/DeploymentGroupInspectCommand*"/>
+                              <include name="**/DeploymentGroupListCommand*"/>
+                              <include name="**/DeploymentGroupRemoveCommand*"/>
+                              <include name="**/DeploymentGroupStatusCommand*"/>
+                              <include name="**/DeploymentGroupInspectCommand*"/>
+                              <include name="**/DeploymentGroupWatchCommand*"/>
+                              <include name="**/RollingUpdateAbortCommand*"/>
+                              <include name="**/RollingUpdateCommand*"/>
+                              <include name="**/Deployment*"/>
+                              <include name="**/DeploymentGroup*"/>
+                              <include name="**/DeploymentGroupResource*"/>
+                              <include name="**/DeploymentGroupStatus*"/>
+                              <include name="**/RolloutOptions*"/>
+                              <include name="**/RolloutTask*"/>
+                              <include name="**/CreateDeploymentGroupResponse*"/>
+                              <include name="**/DeploymentGroupStatusResponse*"/>
+                              <include name="**/RemoveDeploymentGroupResponse*"/>
+                              <include name="**/RollingUpdateRequest*"/>
+                              <include name="**/RollingUpdateResponse*"/>
+                              <include name="**/DeploymentGroupDoesNotExistException*"/>
+                              <include name="**/DeploymentGroupExistsException*"/>
+                              <include name="**/RollingUpdateResponse*"/>
+                            </fileset>
                           </classfiles>
                           <sourcefiles>
                             <fileset dir="../helios-tools/src"/>
