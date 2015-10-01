@@ -67,7 +67,7 @@ public class DeploymentGroupStatusCommandTest {
       HostSelector.parse("a=b"), HostSelector.parse("foo=bar"));
   private static final RolloutOptions ROLLOUT_OPTIONS = RolloutOptions.newBuilder().build();
   private static final DeploymentGroup DEPLOYMENT_GROUP = new DeploymentGroup(
-      GROUP_NAME, HOST_SELECTORS, JOB_ID, ROLLOUT_OPTIONS);
+      GROUP_NAME, HOST_SELECTORS, JOB_ID, ROLLOUT_OPTIONS, null);
 
   private final Namespace options = mock(Namespace.class);
   private final HeliosClient client = mock(HeliosClient.class);
@@ -128,7 +128,7 @@ public class DeploymentGroupStatusCommandTest {
   @Test
   public void testDeploymentGroupStatusBeforeRollingUpdate() throws Exception {
     final DeploymentGroup deploymentGroupWithNoJob = new DeploymentGroup(
-        GROUP_NAME, HOST_SELECTORS, null, ROLLOUT_OPTIONS);
+        GROUP_NAME, HOST_SELECTORS, null, ROLLOUT_OPTIONS, null);
 
     final List<DeploymentGroupStatusResponse.HostStatus> hostStatuses = Lists.newArrayList();
     hostStatuses.add(new DeploymentGroupStatusResponse.HostStatus(

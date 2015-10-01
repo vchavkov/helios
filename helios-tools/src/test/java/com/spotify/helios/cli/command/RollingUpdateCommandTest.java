@@ -108,7 +108,7 @@ public class RollingUpdateCommandTest {
       DeploymentGroupStatusResponse.HostStatus... args) {
     return new DeploymentGroupStatusResponse(
         new DeploymentGroup(GROUP_NAME, Collections.<HostSelector>emptyList(), jobId,
-                            RolloutOptions.newBuilder().build()),
+                            RolloutOptions.newBuilder().build(), null),
         status, error, Arrays.asList(args), null);
   }
 

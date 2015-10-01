@@ -513,7 +513,7 @@ public class ZooKeeperMasterModel implements MasterModel {
     }
 
     final RolloutPlanner rolloutPlanner = DefaultRolloutPlanner.of(deploymentGroup);
-    final List<RolloutTask> rolloutTasks = rolloutPlanner.plan(hostsAndStatuses, deploymentGroup);
+    final List<RolloutTask> rolloutTasks = rolloutPlanner.plan(hostsAndStatuses);
     final DeploymentGroupTasks tasks = DeploymentGroupTasks.newBuilder()
         .setRolloutTasks(rolloutTasks)
         .setTaskIndex(0)
@@ -574,7 +574,7 @@ public class ZooKeeperMasterModel implements MasterModel {
         return rollingUpdateUndeploy(client, opFactory, deploymentGroup, host);
       case DEPLOY_NEW_JOB:
         // add deploy ops for the new job
-        return rollingUpdateDeploy(client, opFactory, deploymentGroup, host);
+        return rollingUpdateDeploy(client, opFactory, deploymentGroup, host, task.getJob());
       case AWAIT_RUNNING:
         return rollingUpdateAwaitRunning(client, opFactory, deploymentGroup, host);
       default:
@@ -716,8 +716,8 @@ public class ZooKeeperMasterModel implements MasterModel {
   private RollingUpdateOp rollingUpdateDeploy(final ZooKeeperClient client,
                                               final RollingUpdateOpFactory opFactory,
                                               final DeploymentGroup deploymentGroup,
-                                              final String host) {
-    final Deployment deployment = Deployment.of(deploymentGroup.getJobId(), Goal.START,
+                                              final String host, final JobId job) {
+    final Deployment deployment = Deployment.of(job, Goal.START,
                                                 Deployment.EMTPY_DEPLOYER_USER, this.name,
                                                 deploymentGroup.getName());
 

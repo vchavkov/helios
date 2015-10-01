@@ -26,12 +26,15 @@ import com.google.common.collect.Lists;
 
 import com.spotify.helios.common.descriptors.DeploymentGroup;
 import com.spotify.helios.common.descriptors.HostStatus;
+import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.RolloutTask;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static java.util.Collections.emptyList;
 
 public class DefaultRolloutPlanner implements RolloutPlanner {
 
@@ -55,6 +58,15 @@ public class DefaultRolloutPlanner implements RolloutPlanner {
       }
     }
 
+    // TOOD(staffan): Fix this hack
+    final List<String> canaryHosts;
+    if (deploymentGroup.getCanaryJobId() != null) {
+      canaryHosts = hosts.subList(0, 1);
+    } else {
+      canaryHosts = emptyList();
+    }
+
+
     // generate the rollout tasks
     final List<RolloutTask> rolloutTasks = Lists.newArrayList();
     final int parallelism = deploymentGroup.getRolloutOptions() != null ?
@@ -63,17 +75,26 @@ public class DefaultRolloutPlanner implements RolloutPlanner {
                             deploymentGroup.getRolloutOptions().getOverlap();
 
     for (final List<String> partition : Lists.partition(hosts, parallelism)) {
-      rolloutTasks.addAll(overlap ? rolloutTasksWithOverlap(partition) : rolloutTasks(partition));
+      rolloutTasks.addAll(overlap ? rolloutTasksWithOverlap(partition, canaryHosts)
+                                  : rolloutTasks(partition, canaryHosts));
     }
 
     return ImmutableList.copyOf(rolloutTasks);
   }
 
-  private List<RolloutTask> rolloutTasks(final List<String> hosts) {
+  private List<RolloutTask> rolloutTasks(final List<String> hosts,
+                                         final List<String> canaryHosts) {
     final ImmutableList.Builder<RolloutTask> result = ImmutableList.builder();
     for (final String host : hosts) {
+      final JobId job;
+      if (canaryHosts.contains(host)) {
+        job = deploymentGroup.getCanaryJobId();
+      } else {
+        job = deploymentGroup.getJobId();
+      }
+
       result.add(RolloutTask.of(RolloutTask.Action.UNDEPLOY_OLD_JOBS, host));
-      result.add(RolloutTask.of(RolloutTask.Action.DEPLOY_NEW_JOB, host));
+      result.add(RolloutTask.of(RolloutTask.Action.DEPLOY_NEW_JOB, host, job));
     }
     for (final String host : hosts) {
       result.add(RolloutTask.of(RolloutTask.Action.AWAIT_RUNNING, host));
@@ -81,10 +102,18 @@ public class DefaultRolloutPlanner implements RolloutPlanner {
     return result.build();
   }
 
-  private List<RolloutTask> rolloutTasksWithOverlap(final List<String> hosts) {
+  private List<RolloutTask> rolloutTasksWithOverlap(final List<String> hosts,
+                                                    final List<String> canaryHosts) {
     final ImmutableList.Builder<RolloutTask> result = ImmutableList.builder();
     for (final String host : hosts) {
-      result.add(RolloutTask.of(RolloutTask.Action.DEPLOY_NEW_JOB, host));
+      final JobId job;
+      if (canaryHosts.contains(host)) {
+        job = deploymentGroup.getCanaryJobId();
+      } else {
+        job = deploymentGroup.getJobId();
+      }
+
+      result.add(RolloutTask.of(RolloutTask.Action.DEPLOY_NEW_JOB, host, job));
     }
     for (final String host : hosts) {
       result.add(RolloutTask.of(RolloutTask.Action.AWAIT_RUNNING, host));

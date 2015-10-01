@@ -634,6 +634,11 @@ public class HeliosClient implements AutoCloseable {
                                      ImmutableSet.of(HTTP_OK, HTTP_BAD_REQUEST)));
   }
 
+  public ListenableFuture<RollingUpdateResponse> rollingUpdate(
+      final String deploymentGroupName, final JobId job, final RolloutOptions options) {
+    return rollingUpdate(deploymentGroupName, job, options, false);
+  }
+
   public ListenableFuture<Integer> stopDeploymentGroup(final String deploymentGroupName) {
     return status(request(
         uri(path("/deployment-group/%s/stop", deploymentGroupName)), "POST"));

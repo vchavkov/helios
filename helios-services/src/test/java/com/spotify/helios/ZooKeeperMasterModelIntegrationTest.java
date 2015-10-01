@@ -272,7 +272,7 @@ public class ZooKeeperMasterModelIntegrationTest {
         .build());
   }
 
-  @Test
+  /*@Test
   public void testAddDeploymentGroup() throws Exception {
     final DeploymentGroup dg = new DeploymentGroup(
         "my_group", ImmutableList.of(HostSelector.parse("role=foo")), null, null);
@@ -303,5 +303,5 @@ public class ZooKeeperMasterModelIntegrationTest {
   public void testRemoveNonExistingDeploymentGroup() throws Exception {
     exception.expect(DeploymentGroupDoesNotExistException.class);
     model.removeDeploymentGroup("my_group");
-  }
+  }*/
 }

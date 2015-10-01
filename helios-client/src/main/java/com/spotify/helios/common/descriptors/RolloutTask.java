@@ -26,6 +26,8 @@ import com.google.common.base.Objects;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import org.jetbrains.annotations.Nullable;
+
 import static com.google.common.base.Preconditions.checkNotNull;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -44,15 +46,22 @@ public class RolloutTask extends Descriptor {
 
   private final Action action;
   private final String target;
+  private final JobId job;
 
   public static RolloutTask of(final Action action, final String target) {
-    return new RolloutTask(action, target);
+    return new RolloutTask(action, target, null);
+  }
+
+  public static RolloutTask of(final Action action, final String target, final JobId job) {
+    return new RolloutTask(action, target, job);
   }
 
   private RolloutTask(@JsonProperty("action") final Action action,
-                     @JsonProperty("target") final String target) {
+                      @JsonProperty("target") final String target,
+                      @JsonProperty("job") @Nullable final JobId job) {
     this.action = checkNotNull(action, "action");
     this.target = checkNotNull(target, "target");
+    this.job = job;
   }
 
   public Action getAction() {
@@ -61,6 +70,10 @@ public class RolloutTask extends Descriptor {
 
   public String getTarget() {
     return target;
+  }
+
+  public JobId getJob() {
+    return job;
   }
 
   public static Builder newBuilder() {
@@ -72,11 +85,12 @@ public class RolloutTask extends Descriptor {
     return Objects.toStringHelper(this)
         .add("action", action)
         .add("target", target)
+        .add("job", job)
         .toString();
   }
 
   @Override
-  public boolean equals(Object o) {
+  public boolean equals(final Object o) {
     if (this == o) {
       return true;
     }
@@ -84,25 +98,33 @@ public class RolloutTask extends Descriptor {
       return false;
     }
 
-    RolloutTask that = (RolloutTask) o;
+    final RolloutTask task = (RolloutTask) o;
 
-    if (action != that.action) {
+    if (action != task.action) {
       return false;
     }
-    return !(target != null ? !target.equals(that.target) : that.target != null);
+    if (job != null ? !job.equals(task.job) : task.job != null) {
+      return false;
+    }
+    if (target != null ? !target.equals(task.target) : task.target != null) {
+      return false;
+    }
 
+    return true;
   }
 
   @Override
   public int hashCode() {
     int result = action != null ? action.hashCode() : 0;
     result = 31 * result + (target != null ? target.hashCode() : 0);
+    result = 31 * result + (job != null ? job.hashCode() : 0);
     return result;
   }
 
   public static class Builder {
     private Action action;
     private String target;
+    private JobId job;
 
     public Builder setAction(Action action) {
       this.action = action;
@@ -114,8 +136,13 @@ public class RolloutTask extends Descriptor {
       return this;
     }
 
+    public Builder setJob(final JobId job) {
+      this.job = job;
+      return this;
+    }
+
     public RolloutTask build() {
-      return new RolloutTask(action, target);
+      return new RolloutTask(action, target, job);
     }
   }
 }

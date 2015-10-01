@@ -28,5 +28,5 @@ import java.util.List;
 import java.util.Map;
 
 public interface RolloutPlanner {
-  List<RolloutTask> plan(final Map<String, HostStatus> hostsAndStatuses);
+  List<RolloutTask> plan(Map<String, HostStatus> hostsAndStatuses);
 }

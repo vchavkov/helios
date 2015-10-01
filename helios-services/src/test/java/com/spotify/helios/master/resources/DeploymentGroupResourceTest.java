@@ -81,7 +81,7 @@ public class DeploymentGroupResourceTest {
   public void testGetDeploymentGroup() throws Exception {
     final DeploymentGroup dg = new DeploymentGroup(
         "foo", Lists.newArrayList(ROLE_SELECTOR, FOO_SELECTOR),
-        new JobId("my_job", "0.2", "1234"), null);
+        new JobId("my_job", "0.2", "1234"), null, null);
     when(model.getDeploymentGroup("foo")).thenReturn(dg);
 
     final Response response = resource.getDeploymentGroup("foo");
@@ -152,11 +152,11 @@ public class DeploymentGroupResourceTest {
   @Test
   public void testRollingUpdateDeploymentGroupDoesNotExist() throws Exception {
     doThrow(new DeploymentGroupDoesNotExistException("")).when(model).rollingUpdate(
-        any(DeploymentGroup.class), any(JobId.class), any(RolloutOptions.class), canary);
+        any(DeploymentGroup.class), any(JobId.class), any(RolloutOptions.class), false);
 
     final Response response = resource.rollingUpdate(
-        "foo", new RollingUpdateRequest(new JobId("foo", "0.3", "1234"),
-                                        RolloutOptions.newBuilder().build()));
+        "foo", false, new RollingUpdateRequest(new JobId("foo", "0.3", "1234"),
+                                               RolloutOptions.newBuilder().build()));
 
     assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
     assertEquals(new RollingUpdateResponse(RollingUpdateResponse.Status.DEPLOYMENT_GROUP_NOT_FOUND),
@@ -166,11 +166,11 @@ public class DeploymentGroupResourceTest {
   @Test
   public void testRollingUpdateJobDoesNotExist() throws Exception {
     doThrow(new JobDoesNotExistException("")).when(model).rollingUpdate(
-        any(DeploymentGroup.class), any(JobId.class), any(RolloutOptions.class), canary);
+        any(DeploymentGroup.class), any(JobId.class), any(RolloutOptions.class), false);
 
     final Response response = resource.rollingUpdate(
-        "foo", new RollingUpdateRequest(new JobId("foo", "0.3", "1234"),
-                                        RolloutOptions.newBuilder().build()));
+        "foo", false, new RollingUpdateRequest(new JobId("foo", "0.3", "1234"),
+                                               RolloutOptions.newBuilder().build()));
 
     assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
     assertEquals(new RollingUpdateResponse(RollingUpdateResponse.Status.JOB_NOT_FOUND),
