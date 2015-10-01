@@ -120,7 +120,8 @@ public interface MasterModel {
 
   void removeDeploymentGroup(String name) throws DeploymentGroupDoesNotExistException;
 
-  void rollingUpdate(DeploymentGroup deploymentGroup, JobId jobId, RolloutOptions options)
+  void rollingUpdate(DeploymentGroup deploymentGroup, JobId jobId, RolloutOptions options,
+                     final boolean canary)
       throws DeploymentGroupDoesNotExistException, JobDoesNotExistException;
 
   void rollingUpdateStep();

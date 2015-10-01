@@ -28,6 +28,8 @@ import com.spotify.helios.common.Json;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.RolloutOptions;
 
+import org.jetbrains.annotations.Nullable;
+
 import static com.google.common.base.Preconditions.checkNotNull;
 
 public class RollingUpdateRequest {

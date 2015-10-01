@@ -446,16 +446,26 @@ public class ZooKeeperMasterModel implements MasterModel {
   @Override
   public void rollingUpdate(final DeploymentGroup deploymentGroup,
                             final JobId jobId,
-                            final RolloutOptions options)
+                            final RolloutOptions options,
+                            final boolean canary)
       throws DeploymentGroupDoesNotExistException, JobDoesNotExistException {
     checkNotNull(deploymentGroup, "deploymentGroup");
 
     log.info("rolling-update on deployment-group: name={}", deploymentGroup.getName());
 
-    final DeploymentGroup updated = deploymentGroup.toBuilder()
-        .setJobId(jobId)
-        .setRolloutOptions(options)
-        .build();
+    final DeploymentGroup updated;
+    if (canary) {
+      updated = deploymentGroup.toBuilder()
+          .setCanaryJobId(jobId)
+          .setRolloutOptions(options)
+          .build();
+    } else {
+      updated = deploymentGroup.toBuilder()
+          .setJobId(jobId)
+          .setCanaryJobId(null)
+          .setRolloutOptions(options)
+          .build();
+    }
 
     if (getJob(jobId) == null) {
       throw new JobDoesNotExistException(jobId);
@@ -503,7 +513,7 @@ public class ZooKeeperMasterModel implements MasterModel {
     }
 
     final RolloutPlanner rolloutPlanner = DefaultRolloutPlanner.of(deploymentGroup);
-    final List<RolloutTask> rolloutTasks = rolloutPlanner.plan(hostsAndStatuses);
+    final List<RolloutTask> rolloutTasks = rolloutPlanner.plan(hostsAndStatuses, deploymentGroup);
     final DeploymentGroupTasks tasks = DeploymentGroupTasks.newBuilder()
         .setRolloutTasks(rolloutTasks)
         .setTaskIndex(0)

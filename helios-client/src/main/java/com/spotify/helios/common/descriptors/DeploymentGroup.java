@@ -74,6 +74,8 @@ public class DeploymentGroup extends Descriptor {
   private final List<HostSelector> hostSelectors;
   private final JobId jobId;
   private final RolloutOptions rolloutOptions;
+  private final JobId canaryJobId;
+  //private final RolloutOptions canaryRolloutOptions;
 
   /**
    * Create a Job.
@@ -87,11 +89,13 @@ public class DeploymentGroup extends Descriptor {
       @JsonProperty("name") final String name,
       @JsonProperty("hostSelectors") final List<HostSelector> hostSelectors,
       @JsonProperty("job") @Nullable final JobId jobId,
-      @JsonProperty("rolloutOptions") @Nullable final RolloutOptions rolloutOptions) {
+      @JsonProperty("rolloutOptions") @Nullable final RolloutOptions rolloutOptions,
+      @JsonProperty("canaryJob") @Nullable final JobId canaryJobId) {
     this.name = name;
     this.hostSelectors = hostSelectors;
     this.jobId = jobId;
     this.rolloutOptions = rolloutOptions;
+    this.canaryJobId = canaryJobId;
   }
 
   public String getName() {
@@ -108,6 +112,10 @@ public class DeploymentGroup extends Descriptor {
 
   public RolloutOptions getRolloutOptions() {
     return rolloutOptions;
+  }
+
+  public JobId getCanaryJobId() {
+    return canaryJobId;
   }
 
   public static Builder newBuilder() {
@@ -157,8 +165,9 @@ public class DeploymentGroup extends Descriptor {
     return "DeploymentGroup{" +
            "name='" + name + '\'' +
            ", hostSelectors=" + hostSelectors +
-           ", job=" + jobId +
+           ", jobId=" + jobId +
            ", rolloutOptions=" + rolloutOptions +
+           ", canaryJobId=" + canaryJobId +
            '}';
   }
 
@@ -168,7 +177,8 @@ public class DeploymentGroup extends Descriptor {
     return builder.setName(name)
         .setJobId(jobId)
         .setHostSelectors(hostSelectors)
-        .setRolloutOptions(rolloutOptions);
+        .setRolloutOptions(rolloutOptions)
+        .setCanaryJobId(canaryJobId);
   }
 
   public static class Builder implements Cloneable {
@@ -185,12 +195,14 @@ public class DeploymentGroup extends Descriptor {
       public JobId jobId;
       public List<HostSelector> hostSelectors;
       public RolloutOptions rolloutOptions;
+      public JobId canaryJobId;
 
       private Parameters() {
         this.name = EMPTY_NAME;
         this.jobId = EMPTY_JOB_ID;
         this.hostSelectors = emptyList();
         this.rolloutOptions = null;
+        this.canaryJobId = null;
       }
     }
 
@@ -230,8 +242,17 @@ public class DeploymentGroup extends Descriptor {
       return this;
     }
 
+    public JobId getCanaryJobId() {
+      return p.canaryJobId;
+    }
+
+    public Builder setCanaryJobId(final JobId canaryJobId) {
+      p.canaryJobId = canaryJobId;
+      return this;
+    }
+
     public DeploymentGroup build() {
-      return new DeploymentGroup(p.name, p.hostSelectors, p.jobId, p.rolloutOptions);
+      return new DeploymentGroup(p.name, p.hostSelectors, p.jobId, p.rolloutOptions, p.canaryJobId);
     }
   }
 

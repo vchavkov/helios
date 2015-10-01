@@ -66,6 +66,7 @@ public class RollingUpdateCommand extends WildcardJobCommand {
   private final Argument migrateArg;
   private final Argument overlapArg;
   private final Argument tokenArg;
+  private final Argument canaryArg;
 
   public RollingUpdateCommand(final Subparser parser) {
     this(parser, new SleepFunction() {
@@ -135,6 +136,10 @@ public class RollingUpdateCommand extends WildcardJobCommand {
         .setDefault(EMPTY_TOKEN)
         .help("Insecure access token meant to prevent accidental changes to your job " +
               "(e.g. undeploys).");
+
+    canaryArg = parser.addArgument("--canary")
+        .action(storeTrue())
+        .help("Roll out the specified job to canaries only.");
   }
 
   @Override
@@ -150,6 +155,7 @@ public class RollingUpdateCommand extends WildcardJobCommand {
     final boolean migrate = options.getBoolean(migrateArg.getDest());
     final boolean overlap = options.getBoolean(overlapArg.getDest());
     final String token = options.getString(tokenArg.getDest());
+    final boolean canary = options.getBoolean(canaryArg.getDest());
 
     checkArgument(timeout > 0, "Timeout must be greater than 0");
     checkArgument(parallelism > 0, "Parallelism must be greater than 0");
@@ -164,7 +170,7 @@ public class RollingUpdateCommand extends WildcardJobCommand {
         .setOverlap(overlap)
         .setToken(token)
         .build();
-    final RollingUpdateResponse response = client.rollingUpdate(name, jobId, rolloutOptions).get();
+    final RollingUpdateResponse response = client.rollingUpdate(name, jobId, rolloutOptions, canary).get();
 
     if (response.getStatus() != RollingUpdateResponse.Status.OK) {
       if (!json) {

@@ -152,7 +152,7 @@ public class DeploymentGroupResourceTest {
   @Test
   public void testRollingUpdateDeploymentGroupDoesNotExist() throws Exception {
     doThrow(new DeploymentGroupDoesNotExistException("")).when(model).rollingUpdate(
-        any(DeploymentGroup.class), any(JobId.class), any(RolloutOptions.class));
+        any(DeploymentGroup.class), any(JobId.class), any(RolloutOptions.class), canary);
 
     final Response response = resource.rollingUpdate(
         "foo", new RollingUpdateRequest(new JobId("foo", "0.3", "1234"),
@@ -166,7 +166,7 @@ public class DeploymentGroupResourceTest {
   @Test
   public void testRollingUpdateJobDoesNotExist() throws Exception {
     doThrow(new JobDoesNotExistException("")).when(model).rollingUpdate(
-        any(DeploymentGroup.class), any(JobId.class), any(RolloutOptions.class));
+        any(DeploymentGroup.class), any(JobId.class), any(RolloutOptions.class), canary);
 
     final Response response = resource.rollingUpdate(
         "foo", new RollingUpdateRequest(new JobId("foo", "0.3", "1234"),
