@@ -29,7 +29,6 @@ import com.spotify.helios.common.descriptors.HostStatus;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.RolloutTask;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -93,11 +92,18 @@ public class DefaultRolloutPlanner implements RolloutPlanner {
         job = deploymentGroup.getJobId();
       }
 
-      result.add(RolloutTask.of(RolloutTask.Action.UNDEPLOY_OLD_JOBS, host));
+      result.add(RolloutTask.of(RolloutTask.Action.UNDEPLOY_OLD_JOBS, host, job));
       result.add(RolloutTask.of(RolloutTask.Action.DEPLOY_NEW_JOB, host, job));
     }
     for (final String host : hosts) {
-      result.add(RolloutTask.of(RolloutTask.Action.AWAIT_RUNNING, host));
+      final JobId job;
+      if (canaryHosts.contains(host)) {
+        job = deploymentGroup.getCanaryJobId();
+      } else {
+        job = deploymentGroup.getJobId();
+      }
+
+      result.add(RolloutTask.of(RolloutTask.Action.AWAIT_RUNNING, host, job));
     }
     return result.build();
   }
@@ -116,10 +122,24 @@ public class DefaultRolloutPlanner implements RolloutPlanner {
       result.add(RolloutTask.of(RolloutTask.Action.DEPLOY_NEW_JOB, host, job));
     }
     for (final String host : hosts) {
-      result.add(RolloutTask.of(RolloutTask.Action.AWAIT_RUNNING, host));
+      final JobId job;
+      if (canaryHosts.contains(host)) {
+        job = deploymentGroup.getCanaryJobId();
+      } else {
+        job = deploymentGroup.getJobId();
+      }
+
+      result.add(RolloutTask.of(RolloutTask.Action.AWAIT_RUNNING, host, job));
     }
     for (final String host : hosts) {
-      result.add(RolloutTask.of(RolloutTask.Action.UNDEPLOY_OLD_JOBS, host));
+      final JobId job;
+      if (canaryHosts.contains(host)) {
+        job = deploymentGroup.getCanaryJobId();
+      } else {
+        job = deploymentGroup.getJobId();
+      }
+
+      result.add(RolloutTask.of(RolloutTask.Action.UNDEPLOY_OLD_JOBS, host, job));
     }
     return result.build();
   }

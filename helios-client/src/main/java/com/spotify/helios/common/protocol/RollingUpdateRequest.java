@@ -28,19 +28,20 @@ import com.spotify.helios.common.Json;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.RolloutOptions;
 
-import org.jetbrains.annotations.Nullable;
-
 import static com.google.common.base.Preconditions.checkNotNull;
 
 public class RollingUpdateRequest {
 
   private final JobId job;
   private final RolloutOptions rolloutOptions;
+  private final boolean canary;
 
   public RollingUpdateRequest(@JsonProperty("job") final JobId job,
-                              @JsonProperty("rolloutOptions") final RolloutOptions rolloutOptions) {
+                              @JsonProperty("rolloutOptions") final RolloutOptions rolloutOptions,
+                              @JsonProperty("canary") final Boolean canary) {
     this.job = checkNotNull(job);
     this.rolloutOptions = rolloutOptions;
+    this.canary = canary == null ? false : canary;
   }
 
   public JobId getJob() {
@@ -51,11 +52,16 @@ public class RollingUpdateRequest {
     return rolloutOptions;
   }
 
+  public boolean isCanary() {
+    return canary;
+  }
+
   @Override
   public String toString() {
     return Objects.toStringHelper(getClass())
         .add("job", job)
         .add("rolloutOptions", rolloutOptions)
+        .add("canary", canary)
         .toString();
   }
 

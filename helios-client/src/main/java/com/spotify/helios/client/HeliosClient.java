@@ -625,11 +625,9 @@ public class HeliosClient implements AutoCloseable {
   public ListenableFuture<RollingUpdateResponse> rollingUpdate(
       final String deploymentGroupName, final JobId job, final RolloutOptions options,
       final boolean canary) {
-    final Map<String, String> queryParams = Maps.newHashMap();
-    queryParams.put("canary", Boolean.toString(canary));
     return transform(
         request(uri(path("/deployment-group/%s/rolling-update", deploymentGroupName)),
-                "POST", new RollingUpdateRequest(job, options)),
+                "POST", new RollingUpdateRequest(job, options, canary)),
         ConvertResponseToPojo.create(RollingUpdateResponse.class,
                                      ImmutableSet.of(HTTP_OK, HTTP_BAD_REQUEST)));
   }

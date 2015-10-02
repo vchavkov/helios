@@ -48,9 +48,9 @@ public class RolloutTask extends Descriptor {
   private final String target;
   private final JobId job;
 
-  public static RolloutTask of(final Action action, final String target) {
+  /*public static RolloutTask of(final Action action, final String target) {
     return new RolloutTask(action, target, null);
-  }
+  }*/
 
   public static RolloutTask of(final Action action, final String target, final JobId job) {
     return new RolloutTask(action, target, job);

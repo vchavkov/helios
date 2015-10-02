@@ -571,12 +571,12 @@ public class ZooKeeperMasterModel implements MasterModel {
     switch (action) {
       case UNDEPLOY_OLD_JOBS:
         // add undeploy ops for jobs previously deployed by this deployment group
-        return rollingUpdateUndeploy(client, opFactory, deploymentGroup, host);
+        return rollingUpdateUndeploy(client, opFactory, deploymentGroup, host, task.getJob());
       case DEPLOY_NEW_JOB:
         // add deploy ops for the new job
         return rollingUpdateDeploy(client, opFactory, deploymentGroup, host, task.getJob());
       case AWAIT_RUNNING:
-        return rollingUpdateAwaitRunning(client, opFactory, deploymentGroup, host);
+        return rollingUpdateAwaitRunning(client, opFactory, deploymentGroup, host, task.getJob());
       default:
         throw new HeliosRuntimeException(String.format(
             "unknown rollout task type %s for deployment group %s.",
@@ -638,9 +638,8 @@ public class ZooKeeperMasterModel implements MasterModel {
   private RollingUpdateOp rollingUpdateAwaitRunning(final ZooKeeperClient client,
                                                     final RollingUpdateOpFactory opFactory,
                                                     final DeploymentGroup deploymentGroup,
-                                                    final String host) {
-    final TaskStatus taskStatus = getTaskStatus(client, host, deploymentGroup.getJobId());
-    final JobId jobId = deploymentGroup.getJobId();
+                                                    final String host, final JobId jobId) {
+    final TaskStatus taskStatus = getTaskStatus(client, host, jobId);
 
     if (taskStatus == null) {
       // Handle cases where agent has not written job status to zookeeper.
@@ -681,7 +680,7 @@ public class ZooKeeperMasterModel implements MasterModel {
       // the job is running on the host. last thing we have to ensure is that it was
       // deployed by this deployment group. otherwise some weird conflict has occurred and we
       // won't be able to undeploy the job on the next update.
-      final Deployment deployment = getDeployment(host, deploymentGroup.getJobId());
+      final Deployment deployment = getDeployment(host, jobId);
       if (deployment == null) {
         return opFactory.error(
             "deployment for this job not found in zookeeper. " +
@@ -742,13 +741,13 @@ public class ZooKeeperMasterModel implements MasterModel {
   private RollingUpdateOp rollingUpdateUndeploy(final ZooKeeperClient client,
                                                 final RollingUpdateOpFactory opFactory,
                                                 final DeploymentGroup deploymentGroup,
-                                                final String host) {
+                                                final String host, final JobId job) {
     final List<ZooKeeperOperation> operations = Lists.newArrayList();
 
     for (final Deployment deployment : getTasks(client, host).values()) {
       final boolean isOwnedByDeploymentGroup = Objects.equals(
           deployment.getDeploymentGroupName(), deploymentGroup.getName());
-      final boolean isSameJob = deployment.getJobId().equals(deploymentGroup.getJobId());
+      final boolean isSameJob = deployment.getJobId().equals(job);
       final RolloutOptions rolloutOptions = deploymentGroup.getRolloutOptions();
 
       if (isOwnedByDeploymentGroup || (

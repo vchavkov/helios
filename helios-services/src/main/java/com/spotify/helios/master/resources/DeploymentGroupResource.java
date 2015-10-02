@@ -25,8 +25,6 @@ import com.google.common.collect.Lists;
 
 import com.codahale.metrics.annotation.ExceptionMetered;
 import com.codahale.metrics.annotation.Timed;
-import com.spotify.docker.client.shaded.javax.ws.rs.DefaultValue;
-import com.spotify.docker.client.shaded.javax.ws.rs.QueryParam;
 import com.spotify.helios.common.descriptors.Deployment;
 import com.spotify.helios.common.descriptors.DeploymentGroup;
 import com.spotify.helios.common.descriptors.DeploymentGroupStatus;
@@ -147,11 +145,10 @@ public class DeploymentGroupResource {
   @Timed
   @ExceptionMetered
   public Response rollingUpdate(@PathParam("name") @Valid final String name,
-                                @QueryParam("canary") @DefaultValue("false") boolean canary,
                                 @Valid final RollingUpdateRequest args) {
     try {
       final DeploymentGroup deploymentGroup = model.getDeploymentGroup(name);
-      model.rollingUpdate(deploymentGroup, args.getJob(), args.getRolloutOptions(), canary);
+      model.rollingUpdate(deploymentGroup, args.getJob(), args.getRolloutOptions(), args.isCanary());
       return Response.ok(new RollingUpdateResponse(RollingUpdateResponse.Status.OK)).build();
     } catch (DeploymentGroupDoesNotExistException e) {
       return Response.ok(new RollingUpdateResponse(

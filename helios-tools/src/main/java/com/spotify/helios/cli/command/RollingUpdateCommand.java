@@ -170,7 +170,8 @@ public class RollingUpdateCommand extends WildcardJobCommand {
         .setOverlap(overlap)
         .setToken(token)
         .build();
-    final RollingUpdateResponse response = client.rollingUpdate(name, jobId, rolloutOptions, canary).get();
+    final RollingUpdateResponse response =
+        client.rollingUpdate(name, jobId, rolloutOptions, canary).get();
 
     if (response.getStatus() != RollingUpdateResponse.Status.OK) {
       if (!json) {

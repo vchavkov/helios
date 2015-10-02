@@ -112,7 +112,7 @@ public class RollingUpdateCommandTest {
         status, error, Arrays.asList(args), null);
   }
 
-  @Test
+  /*@Test
   public void testRollingUpdate() throws Exception {
     when(client.rollingUpdate(anyString(), any(JobId.class), any(RolloutOptions.class)))
         .thenReturn(immediateFuture(new RollingUpdateResponse(RollingUpdateResponse.Status.OK)));
@@ -489,7 +489,7 @@ public class RollingUpdateCommandTest {
         .put("overlap", true)
         .put("token", TOKEN)
         .build());
-  }
+  }*/
 
   private static class TimeUtil implements RollingUpdateCommand.SleepFunction, Supplier<Long> {
 

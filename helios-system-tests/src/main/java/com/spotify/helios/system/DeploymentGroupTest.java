@@ -215,7 +215,11 @@ public class DeploymentGroupTest extends SystemTestBase {
 
     System.out.println(output);
 
-    System.out.println(cli("deployment-group-status", TEST_GROUP));
+
+    for (int i = 0; i < 30; ++i) {
+      Thread.sleep(5000);
+      System.out.println(cli("deployment-group-status", TEST_GROUP));
+    }
 
     // Check that the hosts in the output are ordered
     /*final List<String> lines = Lists.newArrayList(Splitter.on("\n").split(output));

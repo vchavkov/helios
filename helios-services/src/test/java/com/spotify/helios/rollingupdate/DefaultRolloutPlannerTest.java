@@ -41,7 +41,7 @@ import static org.mockito.Mockito.when;
 
 public class DefaultRolloutPlannerTest {
 
-  @Test
+  /*@Test
   public void testSerialRollout() {
     final DeploymentGroup deploymentGroup = DeploymentGroup.newBuilder()
         .setRolloutOptions(RolloutOptions.newBuilder()
@@ -221,5 +221,5 @@ public class DefaultRolloutPlannerTest {
         RolloutTask.of(RolloutTask.Action.UNDEPLOY_OLD_JOBS, "agent4"));
 
     assertEquals(expected, tasks);
-  }
+  }*/
 }
