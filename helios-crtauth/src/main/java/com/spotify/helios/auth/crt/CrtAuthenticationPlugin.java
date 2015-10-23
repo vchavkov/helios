@@ -21,13 +21,16 @@ import com.google.auto.service.AutoService;
 import com.google.common.annotations.VisibleForTesting;
 
 import com.spotify.crtauth.CrtAuthServer;
-import com.spotify.crtauth.keyprovider.KeyProvider;
+import com.spotify.crtauth.keyprovider.FileKeyProvider;
 import com.spotify.helios.auth.AuthenticationPlugin;
 
 import org.springframework.ldap.core.LdapTemplate;
 import org.springframework.ldap.core.support.LdapContextSource;
 
+import java.io.File;
 import java.util.Map;
+
+import static com.google.common.base.Strings.isNullOrEmpty;
 
 @AutoService(AuthenticationPlugin.class)
 public class CrtAuthenticationPlugin implements AuthenticationPlugin<CrtAccessToken> {
@@ -52,31 +55,39 @@ public class CrtAuthenticationPlugin implements AuthenticationPlugin<CrtAccessTo
   public ServerAuthentication<CrtAccessToken> serverAuthentication() {
     // only validate the presence of environment variables when this method is called, as opposed to
     // in the constructor, as the client-side code will not use the same environment variables
-    final String ldapUrl =  getRequiredEnv("CRTAUTH_LDAP_URL");
-    final String ldapSearchPath = getRequiredEnv("CRTAUTH_LDAP_SEARCH_PATH");
     final String serverName = getRequiredEnv("CRTAUTH_SERVERNAME");
     final String secret = getRequiredEnv("CRTAUTH_SECRET");
-    final String ldapFieldNameOfKey = getOptionalEnv("CRTAUTH_LDAP_KEY_FIELDNAME", "sshPublicKey");
     final int tokenLifetimeSecs = getOptionalEnv("CRTAUTH_TOKEN_LIFETIME_SECS", 540);
 
-    final LdapContextSource contextSource = new LdapContextSource();
-    contextSource.setUrl(ldapUrl);
-    contextSource.setAnonymousReadOnly(true);
-    contextSource.setCacheEnvironmentProperties(false);
-
-    final LdapTemplate ldapTemplate = new LdapTemplate(contextSource);
-
-    // TODO (mbrown): this should be general, support reading keys from flat files etc
-    final KeyProvider keyProvider =
-        new LdapKeyProvider(ldapTemplate, ldapSearchPath, ldapFieldNameOfKey);
-
-    CrtAuthServer authServer = new CrtAuthServer.Builder()
+    final CrtAuthServer.Builder authServerBuilder = new CrtAuthServer.Builder()
         .setServerName(serverName)
-        .setKeyProvider(keyProvider)
         .setSecret(secret.getBytes())
-        .setTokenLifetimeInS(tokenLifetimeSecs)
-        .build();
+        .setTokenLifetimeSeconds(tokenLifetimeSecs);
 
+    final String keyRootDir = getEnv("CRTAUTH_KEY_ROOT_DIR", false);
+    if (!isNullOrEmpty(keyRootDir)) {
+      authServerBuilder.addKeyProvider(new FileKeyProvider(new File(keyRootDir)));
+    }
+
+    final String ldapUrl =  getEnv("CRTAUTH_LDAP_URL", false);
+    if (!isNullOrEmpty(ldapUrl)) {
+      final String ldapSearchPath = getRequiredEnv("CRTAUTH_LDAP_SEARCH_PATH");
+      final String
+          ldapFieldNameOfKey =
+          getOptionalEnv("CRTAUTH_LDAP_KEY_FIELDNAME", "sshPublicKey");
+
+      final LdapContextSource contextSource = new LdapContextSource();
+      contextSource.setUrl(ldapUrl);
+      contextSource.setAnonymousReadOnly(true);
+      contextSource.setCacheEnvironmentProperties(false);
+
+      final LdapTemplate ldapTemplate = new LdapTemplate(contextSource);
+
+      authServerBuilder.addKeyProvider(new LdapKeyProvider(ldapTemplate, ldapSearchPath,
+                                                           ldapFieldNameOfKey));
+    }
+
+    final CrtAuthServer authServer = authServerBuilder.build();
     return new CrtServerAuthentication(new CrtTokenAuthenticator(authServer), authServer);
   }
 

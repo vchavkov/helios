@@ -27,6 +27,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -35,21 +36,20 @@ public class CrtAuthenticationPluginTest {
   @Rule
   public ExpectedException exception = ExpectedException.none();
 
-  private final Map<String, String> requiredEnvArgs = ImmutableMap.of(
-      "CRTAUTH_LDAP_URL", "ldap://server1",
-      "CRTAUTH_LDAP_SEARCH_PATH", "foo",
-      "CRTAUTH_SERVERNAME", "server1",
-      "CRTAUTH_SECRET", "a secret password",
-      "CRTAUTH_TOKEN_LIFETIME_SECS", "60"
-  );
+  private final Map<String, String> requiredEnvArgs = ImmutableMap.<String, String>builder()
+      .put("CRTAUTH_KEY_ROOT_DIR", "/tmp/does_not_exist/hopefully/for_realz")
+      .put("CRTAUTH_LDAP_URL", "ldap://server1")
+      .put("CRTAUTH_LDAP_SEARCH_PATH", "foo")
+      .put("CRTAUTH_SERVERNAME", "server1")
+      .put("CRTAUTH_SECRET", "a secret password")
+      .put("CRTAUTH_TOKEN_LIFETIME_SECS", "60")
+      .build();
 
   @Test
   public void serverAuthentication_NoEnvironmentVariables() {
     exception.expect(IllegalArgumentException.class);
 
-    final Map<String, String> env = ImmutableMap.of();
-
-    final CrtAuthenticationPlugin plugin = new CrtAuthenticationPlugin(env);
+    final CrtAuthenticationPlugin plugin = new CrtAuthenticationPlugin(Collections.EMPTY_MAP);
     plugin.serverAuthentication();
   }
 
