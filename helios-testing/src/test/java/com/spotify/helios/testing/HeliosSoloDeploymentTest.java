@@ -21,7 +21,6 @@ package com.spotify.helios.testing;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
 
-import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -52,20 +51,36 @@ public class HeliosSoloDeploymentTest {
     private TemporaryJob soloJob;
 
     // TODO(negz): We want one deployment per test run, not one per test class.
-    @ClassRule
+    /*@ClassRule
     public static final HeliosDeploymentResource DEPLOYMENT = new HeliosDeploymentResource(
-            HeliosSoloDeployment.fromEnv().build());
+            HeliosSoloDeployment.fromEnv().build());*/
 
     @Rule
-    public final TemporaryJobs temporaryJobs = TemporaryJobs.create(DEPLOYMENT.client());
+    public final TemporaryJobs temporaryJobs = TemporaryJobs.create(/*DEPLOYMENT.client()*/);
 
     @Test
     public void testDeployToSolo() throws Exception {
       final TemporaryJob job = temporaryJobs.job()
+          .volume("/path/to/volume", "/source")
               .command(IDLE_COMMAND)
               .deploy();
 
-      final Map<JobId, Job> jobs = DEPLOYMENT.client().jobs().get(15, SECONDS);
+      final Map<JobId, Job> jobs = temporaryJobs.client().jobs().get(15, SECONDS);
+      assertEquals("wrong number of jobs running", 1, jobs.size());
+      for (Job j : jobs.values()) {
+        assertEquals("wrong job running", BUSYBOX, j.getImage());
+      }
+
+      job.undeploy();
+    }
+
+    @Test
+    public void testDeployToSolo2() throws Exception {
+      final TemporaryJob job = temporaryJobs.job()
+          .command(IDLE_COMMAND)
+          .deploy();
+
+      final Map<JobId, Job> jobs = temporaryJobs.client().jobs().get(15, SECONDS);
       assertEquals("wrong number of jobs running", 1, jobs.size());
       for (Job j : jobs.values()) {
         assertEquals("wrong job running", BUSYBOX, j.getImage());

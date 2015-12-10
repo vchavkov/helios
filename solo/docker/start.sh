@@ -78,8 +78,6 @@ com.spotify.helios.master.MasterMain \
 $HELIOS_MASTER_OPTS \
 &
 
-set +x
-
 if [ "$HELIOS_SOLO_SUICIDE" -eq 1 ]; then
     HELIOS_CLI_CMD="java -cp /*.jar -Xmx128m -Djava.net.preferIPv4Stack=true com.spotify.helios.cli.CliMain -z http://localhost:5801"
 
@@ -90,7 +88,7 @@ if [ "$HELIOS_SOLO_SUICIDE" -eq 1 ]; then
     # Clean up created jobs (make sure containers are stopped)
     jobs=$($HELIOS_CLI_CMD --json jobs | jq -a -r "keys[]")
     for job in $jobs; do
-	$HELIOS_CLI_CMD --force --yes -a "$job"
+	$HELIOS_CLI_CMD undeploy --force --yes -a "$job"
     done
 
     # Wait for jobs to be undeployed
@@ -106,6 +104,8 @@ if [ "$HELIOS_SOLO_SUICIDE" -eq 1 ]; then
 
     echo "Clean up done, exiting"
 else
+    set +x
+
     # Sleep or execute command line
     while :; do sleep 1; done
 fi

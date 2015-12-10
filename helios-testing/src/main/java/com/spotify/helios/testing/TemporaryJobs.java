@@ -17,9 +17,7 @@
 
 package com.spotify.helios.testing;
 
-import com.google.common.base.Splitter;
 import com.google.common.base.Throwables;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.util.concurrent.MoreExecutors;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
@@ -28,7 +26,6 @@ import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.Json;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
-import com.spotify.helios.common.descriptors.JobStatus;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 import com.typesafe.config.ConfigList;
@@ -48,12 +45,9 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.nio.file.Files;
-import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -125,13 +119,13 @@ public class TemporaryJobs implements TestRule {
     final Path prefixDirectory = Paths.get(fromNullable(builder.prefixDirectory)
                                                .or(DEFAULT_PREFIX_DIRECTORY));
     try {
-      removeOldJobs(prefixDirectory);
+      //removeOldJobs(prefixDirectory);
       if (isNullOrEmpty(builder.jobPrefix)) {
         this.jobPrefixFile = JobPrefixFile.create(prefixDirectory);
       } else {
         this.jobPrefixFile = JobPrefixFile.create(builder.jobPrefix, prefixDirectory);
       }
-    } catch (IOException | ExecutionException | InterruptedException e) {
+    } catch (IOException /*| ExecutionException | InterruptedException*/ e) {
       throw Throwables.propagate(e);
     }
 
@@ -396,7 +390,7 @@ public class TemporaryJobs implements TestRule {
    * @throws InterruptedException
    * @throws IOException
    */
-  private void removeOldJobs(final Path prefixDirectory)
+  /*private void removeOldJobs(final Path prefixDirectory)
       throws ExecutionException, InterruptedException, IOException {
     final File[] files = prefixDirectory.toFile().listFiles();
     if (files == null || files.length == 0) {
@@ -456,7 +450,7 @@ public class TemporaryJobs implements TestRule {
         log.warn("Exception processing file {}", file.getPath(), e);
       }
     }
-  }
+  }*/
 
   public JobPrefixFile jobPrefixFile() {
     return jobPrefixFile;
@@ -573,10 +567,12 @@ public class TemporaryJobs implements TestRule {
       }
 
       // Configuration from profile may be overridden by environment variables
-      configureWithEnv();
+      //configureWithEnv();
+
+      client = HeliosSoloDeployment.getOrCreateHeliosSoloDeployment().client();
     }
 
-    private void configureWithEnv() {
+    /*private void configureWithEnv() {
       // Use HELIOS_HOST_FILTER if set
       final String heliosHostFilter = env.get("HELIOS_HOST_FILTER");
       if (heliosHostFilter != null) {
@@ -627,7 +623,7 @@ public class TemporaryJobs implements TestRule {
       if (isNullOrEmpty(hostFilter)) {
         hostFilter(DEFAULT_LOCAL_HOST_FILTER);
       }
-    }
+    }*/
 
     private void processHostPickingStrategy() {
       final String value = this.config.getString("hostPickingStrategy");

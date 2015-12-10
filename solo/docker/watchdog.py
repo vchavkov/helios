@@ -1,15 +1,14 @@
 # -*- coding: utf-8 -*-
-# Copyright (c) 2012 Spotify AB
+# Copyright (c) 2015 Spotify AB
 
 import socket
 import asyncore
 import time
+import sys
+import os
 
 PORT=33333
 TIMEOUT=60
-
-print "Listening for connection on port {}...".format(PORT)
-
 connected=False
 closed=False
 
@@ -25,7 +24,7 @@ class Server(asyncore.dispatcher):
         # when we get a client connection start a dispatcher for that
         # client
         socket, address = self.accept()
-        print 'Connection by', address
+        print 'Accepted connection from', address
         # Don't accept more incoming connections
         self.close()
         global connected
@@ -40,8 +39,14 @@ class Handler(asyncore.dispatcher_with_send):
         self.close()
 
     def handle_read(self):
-        self.recv(1)
-        self.close()
+        # Echo any data received
+        self.out_buffer = self.recv(1024)
+        if not self.out_buffer:
+            self.close()
+
+sys.stdout = os.fdopen(sys.stdout.fileno(), 'w', 0)
+
+print "Listening for connection on port {}...".format(PORT)
 
 s = Server('', PORT)
 
