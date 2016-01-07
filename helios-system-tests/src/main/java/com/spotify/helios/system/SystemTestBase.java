@@ -202,7 +202,6 @@ public abstract class SystemTestBase {
   private String masterName;
 
   private ZooKeeperTestManager zk;
-  protected static String zooKeeperNamespace = null;
   protected final String zkClusterId = String.valueOf(ThreadLocalRandom.current().nextInt(10000));
 
   /** An HttpClient that can be used for sending arbitrary HTTP requests */
@@ -352,7 +351,7 @@ public abstract class SystemTestBase {
   }
 
   protected ZooKeeperTestManager zooKeeperTestManager() {
-    return new ZooKeeperTestingServerManager(zooKeeperNamespace);
+    return new ZooKeeperTestingServerManager();
   }
 
   @After
