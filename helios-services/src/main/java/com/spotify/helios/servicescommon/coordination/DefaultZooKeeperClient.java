@@ -22,6 +22,7 @@ import com.google.common.collect.ImmutableList;
 import com.fasterxml.jackson.databind.JavaType;
 
 import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.framework.api.ACLProvider;
 import org.apache.curator.framework.api.transaction.CuratorTransactionFinal;
 import org.apache.curator.framework.api.transaction.CuratorTransactionResult;
 import org.apache.curator.framework.listen.Listenable;
@@ -406,6 +407,29 @@ public class DefaultZooKeeperClient implements ZooKeeperClient {
     assertClusterIdFlagTrue();
     try {
       return client.getACL().forPath(path);
+    } catch (Exception e) {
+      propagateIfInstanceOf(e, KeeperException.class);
+      throw propagate(e);
+    }
+  }
+
+  @Override
+  public void initializeAclRecursive(final String path, final ACLProvider aclProvider)
+      throws KeeperException {
+    assertClusterIdFlagTrue();
+    try {
+      final List<ACL> expected = aclProvider.getAclForPath(path);
+      final List<ACL> actual = getAcl(path);
+
+      if ((expected.size() == actual.size()) && (expected.containsAll(actual))) {
+        // actual ACL matches expected
+      } else {
+        setAcl(path, expected);
+      }
+
+      for (final String child : getChildren(path)) {
+        initializeAclRecursive(child, aclProvider);
+      }
     } catch (Exception e) {
       propagateIfInstanceOf(e, KeeperException.class);
       throw propagate(e);
