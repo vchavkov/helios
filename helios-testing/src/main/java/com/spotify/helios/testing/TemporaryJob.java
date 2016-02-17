@@ -25,6 +25,11 @@ import com.google.common.collect.Lists;
 import com.google.common.net.HostAndPort;
 import com.google.common.util.concurrent.Futures;
 
+import com.spotify.docker.client.DefaultDockerClient;
+import com.spotify.docker.client.DockerCertificateException;
+import com.spotify.docker.client.DockerClient.LogsParam;
+import com.spotify.docker.client.DockerException;
+import com.spotify.docker.client.LogStream;
 import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.descriptors.Deployment;
 import com.spotify.helios.common.descriptors.Goal;
@@ -180,7 +185,7 @@ public class TemporaryJob {
     } catch (InterruptedException | ExecutionException | TimeoutException e) {
       fail(format("Failed to create job %s %s - %s", job.getId(), job.toString(), e));
     } finally {
-      createJob.finish();;
+      createJob.finish();
     }
 
     final TemporaryJobReports.Step deployJob = reportWriter.step("deploy job")
@@ -329,6 +334,22 @@ public class TemporaryJob {
       if (status.getThrottled() != ThrottleState.NO) {
         stateString += format("(%s)", status.getThrottled());
       }
+
+      try {
+        // run `docker logs` on the container for debugging why it failed
+        log.error(String.format("verifyHealthy failed. "
+                                + "Trying to output docker logs of image %s with container ID %s",
+                                job.getImage(), status.getContainerId()));
+        final DefaultDockerClient dockerClient = DefaultDockerClient.fromEnv().build();
+        try (final LogStream logStream = dockerClient.logs(
+            status.getContainerId(), LogsParam.stdout(), LogsParam.stderr())) {
+          log.error(logStream.readFully());
+        }
+      } catch (DockerCertificateException | DockerException | InterruptedException e) {
+        log.error("Error trying to `docker log` container.");
+        e.printStackTrace();
+      }
+
       throw new AssertionError(format(
           "Unexpected job state %s for job %s with image %s on host %s. Check helios agent "
           + "logs for details.", stateString, job.getId().toShortString(), job.getImage(), host));
