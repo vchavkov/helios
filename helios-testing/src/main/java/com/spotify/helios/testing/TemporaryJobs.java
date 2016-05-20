@@ -25,7 +25,6 @@ import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.Json;
 import com.spotify.helios.common.descriptors.Job;
-import com.spotify.helios.common.descriptors.JobId;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 import com.typesafe.config.ConfigList;
@@ -63,7 +62,6 @@ import static com.google.common.base.Charsets.UTF_8;
 import static com.google.common.base.Optional.fromNullable;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
-import static com.google.common.collect.Lists.newArrayList;
 import static java.lang.Integer.toHexString;
 import static java.lang.String.format;
 import static java.lang.System.getProperty;
@@ -135,8 +133,6 @@ public class TemporaryJobs implements TestRule {
    * If @Rule cannot be used, call this method after running tests.
    */
   public void after() {
-    final List<JobId> jobIds = Lists.newArrayListWithCapacity(jobs.size());
-
     // Stop the test runner thread
     executor.shutdownNow();
     try {
@@ -145,21 +141,6 @@ public class TemporaryJobs implements TestRule {
         log.warn("Failed to stop test runner thread");
       }
     } catch (InterruptedException ignore) {
-    }
-
-    final List<AssertionError> errors = newArrayList();
-
-    for (final TemporaryJob job : jobs) {
-      jobIds.add(job.job().getId());
-      // TODO (dxia) Undeploying a job doesn't guaruntee the container will be stopped immediately.
-      // Luckily TaskRunner tells docker to wait 120 seconds after stopping to kill the container.
-      // So containers that don't immediately stop **should** only stay around for at most 120
-      // seconds.
-      job.undeploy(errors);
-    }
-
-    for (final AssertionError error : errors) {
-      log.error(error.getMessage());
     }
 
     heliosSoloDeployment.close();
