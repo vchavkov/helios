@@ -17,10 +17,7 @@
 
 package com.spotify.helios.testing;
 
-import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
-import com.google.common.util.concurrent.MoreExecutors;
-import com.google.common.util.concurrent.ThreadFactoryBuilder;
 
 import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.Json;
@@ -31,13 +28,6 @@ import com.typesafe.config.ConfigList;
 import com.typesafe.config.ConfigValue;
 import com.typesafe.config.ConfigValueFactory;
 import com.typesafe.config.ConfigValueType;
-
-import org.junit.rules.TestRule;
-import org.junit.runner.Description;
-import org.junit.runners.model.MultipleFailureException;
-import org.junit.runners.model.Statement;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
@@ -50,33 +40,27 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.ThreadPoolExecutor;
 
 import static com.google.common.base.Charsets.UTF_8;
 import static com.google.common.base.Optional.fromNullable;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.lang.Integer.toHexString;
-import static java.lang.String.format;
 import static java.lang.System.getProperty;
 import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.MINUTES;
-import static java.util.concurrent.TimeUnit.SECONDS;
 
-public class TemporaryJobs implements TestRule {
-  private static final Logger log = LoggerFactory.getLogger(TemporaryJobs.class);
+/**
+ * A class that starts a helios-solo container {@link HeliosSoloDeployment},
+ * and lets you deploy temporary Helios jobs (aka {@link TemporaryJob}) to it.
+ */
+public class TemporaryJobs implements AutoCloseable {
 
   private static final String HELIOS_TESTING_PROFILE = "helios.testing.profile";
   private static final String HELIOS_TESTING_PROFILES = "helios.testing.profiles.";
   private static final String DEFAULT_USER = getProperty("user.name");
   private static final Prober DEFAULT_PROBER = new DefaultProber();
-  private static final long JOB_HEALTH_CHECK_INTERVAL_MILLIS = SECONDS.toMillis(5);
   private static final long DEFAULT_DEPLOY_TIMEOUT_MILLIS = MINUTES.toMillis(10);
 
   private final HeliosSoloDeployment heliosSoloDeployment;
@@ -88,14 +72,6 @@ public class TemporaryJobs implements TestRule {
   private final Map<String, String> env;
   private final List<TemporaryJob> jobs = Lists.newCopyOnWriteArrayList();
   private final Deployer deployer;
-
-  private final ExecutorService executor = MoreExecutors.getExitingExecutorService(
-      (ThreadPoolExecutor) Executors.newFixedThreadPool(
-          1, new ThreadFactoryBuilder()
-              .setNameFormat("helios-test-runner-%d")
-              .setDaemon(true)
-              .build()),
-      0, SECONDS);
 
   TemporaryJobs(final Builder builder, final Config config) {
     this.heliosSoloDeployment = checkNotNull(builder.heliosSoloDeployment, "heliosSoloDeployment");
@@ -109,7 +85,7 @@ public class TemporaryJobs implements TestRule {
 
     this.deployer = fromNullable(builder.deployer).or(
         new DefaultDeployer(client, jobs, builder.hostPickingStrategy,
-            builder.jobDeployedMessageFormat, builder.deployTimeoutMillis));
+                            builder.jobDeployedMessageFormat, builder.deployTimeoutMillis));
 
     // Load in the prefix so it can be used in the config
     final Config configWithPrefix = ConfigFactory.empty()
@@ -118,34 +94,7 @@ public class TemporaryJobs implements TestRule {
     this.config = config.withFallback(configWithPrefix).resolve();
   }
 
-  /**
-   * Perform setup. This is normally called by JUnit when TemporaryJobs is used with @Rule.
-   * If @Rule cannot be used, call this method before calling {@link #job()}.
-   *
-   * Note: When not being used as a @Rule, jobs will not be monitored during test runs.
-   */
-  public void before() {
-    deployer.readyToDeploy();
-  }
-
-  /**
-   * Perform teardown. This is normally called by JUnit when TemporaryJobs is used with @Rule.
-   * If @Rule cannot be used, call this method after running tests.
-   */
-  public void after() {
-    // Stop the test runner thread
-    executor.shutdownNow();
-    try {
-      final boolean terminated = executor.awaitTermination(30, SECONDS);
-      if (!terminated) {
-        log.warn("Failed to stop test runner thread");
-      }
-    } catch (InterruptedException ignore) {
-    }
-
-    heliosSoloDeployment.close();
-  }
-
+  // TODO (dxia) Is this a descriptive enough method name or should we use "newTemporaryJobBuilder"?
   public TemporaryJobBuilder job() {
     return this.job(Job.newBuilder());
   }
@@ -220,7 +169,7 @@ public class TemporaryJobs implements TestRule {
   }
 
   /**
-   * Creates a new instance of TemporaryJobs. Will attempt start a helios-solo container which
+   * Creates a new instance of TemporaryJobs. Will attempt to start a helios-solo container which
    * has a master, ZooKeeper, and one agent.
    *
    * @return an instance of TemporaryJobs
@@ -244,73 +193,24 @@ public class TemporaryJobs implements TestRule {
     return builder(profile).build();
   }
 
-  @Override
-  public Statement apply(final Statement base, final Description description) {
-    return new Statement() {
-      @Override
-      public void evaluate() throws Throwable {
-        before();
-        try {
-          perform(base);
-        } finally {
-          after();
-        }
-      }
-    };
-  }
-
-  private void perform(final Statement base)
-          throws InterruptedException {
-    // Run the actual test on a thread
-    final Future<Object> future = executor.submit(new Callable<Object>() {
-      @Override
-      public Object call() throws Exception {
-        try {
-          base.evaluate();
-        } catch (MultipleFailureException e) {
-          // Log the stack trace for each exception in the MultipleFailureException, because
-          // stack traces won't be logged when this is caught and logged higher in the call stack.
-          final List<Throwable> failures = e.getFailures();
-          log.error(format("MultipleFailureException contains %d failures:", failures.size()));
-          for (int i = 0; i < failures.size(); i++) {
-            log.error(format("MultipleFailureException %d:", i), failures.get(i));
-          }
-          throw Throwables.propagate(e);
-        } catch (Throwable throwable) {
-          Throwables.propagateIfPossible(throwable, Exception.class);
-          throw Throwables.propagate(throwable);
-        }
-        return null;
-      }
-    });
-
-    // Monitor jobs while test is running
-    while (!future.isDone()) {
-      Thread.sleep(JOB_HEALTH_CHECK_INTERVAL_MILLIS);
-      verifyJobsHealthy();
-    }
-
-    // Rethrow test failure, if any
-    try {
-      future.get();
-    } catch (ExecutionException e) {
-      final Throwable cause = (e.getCause() == null) ? e : e.getCause();
-      throw Throwables.propagate(cause);
-    }
-  }
-
-  private void verifyJobsHealthy() throws AssertionError {
-    for (final TemporaryJob job : jobs) {
-      job.verifyHealthy();
-    }
-  }
-
   String jobPrefix() {
     return jobPrefix;
   }
 
   public HeliosClient client() {
     return client;
+  }
+
+  List<TemporaryJob> jobs() {
+    return jobs;
+  }
+
+  Deployer deployer() {
+    return deployer;
+  }
+
+  HeliosSoloDeployment heliosSoloDeployment() {
+    return heliosSoloDeployment;
   }
 
   public static Builder builder() {
@@ -332,6 +232,11 @@ public class TemporaryJobs implements TestRule {
   static Builder builder(final String profile, final Map<String, String> env,
                          final HeliosClient.Builder clientBuilder) {
     return new Builder(profile, HeliosConfig.loadConfig("helios-testing"), env, clientBuilder);
+  }
+
+  @Override
+  public void close() {
+    heliosSoloDeployment.close();
   }
 
   public static class Builder {

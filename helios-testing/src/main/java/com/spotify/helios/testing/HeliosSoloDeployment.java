@@ -432,6 +432,7 @@ class HeliosSoloDeployment implements AutoCloseable {
       log.warn("unable to kill container {}", id, e);
     }
   }
+
   private void removeContainer(final String id) {
     try {
       dockerClient.removeContainer(id);
@@ -636,7 +637,7 @@ class HeliosSoloDeployment implements AutoCloseable {
      * By default, the {@link #heliosSoloImage} will be checked for updates before creating a
      * container by doing a "docker pull". Call this method with "false" to disable this behavior.
      */
-    public Builder checkForNewImages(boolean enabled) {
+    Builder checkForNewImages(boolean enabled) {
       this.pullBeforeCreate = enabled;
       return this;
     }
@@ -647,7 +648,7 @@ class HeliosSoloDeployment implements AutoCloseable {
      * (which is probably only useful for developing helios-solo or this class itself and
      * inspecting logs).
      */
-    public Builder removeHeliosSoloOnExit(boolean enabled) {
+    Builder removeHeliosSoloOnExit(boolean enabled) {
       this.removeHeliosSoloContainerOnExit = enabled;
       return this;
     }
@@ -659,7 +660,7 @@ class HeliosSoloDeployment implements AutoCloseable {
      * @param dockerClient A client connected to the Docker instance in which to deploy Helios Solo.
      * @return This Builder, with its Docker client configured.
      */
-    public Builder dockerClient(final DockerClient dockerClient) {
+    Builder dockerClient(final DockerClient dockerClient) {
       this.dockerClient = dockerClient;
       return this;
     }
@@ -673,7 +674,7 @@ class HeliosSoloDeployment implements AutoCloseable {
      * @param dockerHost Docker socket and certificate settings for the host OS.
      * @return This Builder, with its Docker host configured.
      */
-    public Builder dockerHost(final DockerHost dockerHost) {
+    Builder dockerHost(final DockerHost dockerHost) {
       this.dockerHost = dockerHost;
       return this;
     }
