@@ -44,7 +44,6 @@ public class TempJobFailureTest extends TemporaryJobsTestBase {
         .hostFilter(".*")
         .client(client)
         .prober(new TestProber())
-        .prefixDirectory(prefixDirectory.toString())
         .jobPrefix(testTag)
         .build();
 

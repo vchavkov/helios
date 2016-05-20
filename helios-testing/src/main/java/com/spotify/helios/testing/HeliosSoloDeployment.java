@@ -70,7 +70,7 @@ import static java.util.Collections.singletonList;
  * master and one Helios agent deployed in Docker. Helios Solo uses the Docker instance it is
  * deployed on to run its jobs.
  */
-class HeliosSoloDeployment implements AutoCloseable {
+class HeliosSoloDeployment implements HeliosDeployment {
 
   private static final Logger log = LoggerFactory.getLogger(HeliosSoloDeployment.class);
 
@@ -240,6 +240,7 @@ class HeliosSoloDeployment implements AutoCloseable {
     return dockerHost;
   }
 
+  @Override
   public HostAndPort address() {
     return deploymentAddress;
   }
@@ -474,6 +475,7 @@ class HeliosSoloDeployment implements AutoCloseable {
   /**
    * @return A helios client connected to the master of this HeliosSoloDeployment.
    */
+  @Override
   public HeliosClient client() {
     return this.heliosClient;
   }
@@ -485,9 +487,15 @@ class HeliosSoloDeployment implements AutoCloseable {
     return heliosContainerId;
   }
 
+  // TODO (dxia) Ideally we don't need this. Only used by ExistingHeliosDeployment
+  @Override
+  public void cleanup() {
+  }
+
   /**
    * Undeploy (shut down) this HeliosSoloDeployment.
    */
+  @Override
   public void close() {
     log.info("shutting ourselves down");
 
