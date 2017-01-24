@@ -22,6 +22,12 @@ package com.spotify.helios.cli.command;
 
 import static com.google.common.base.CharMatcher.WHITESPACE;
 import static com.spotify.helios.cli.Utils.printMap;
+import static com.spotify.helios.common.descriptors.Job.DEFAULT_NETWORK_MODE;
+import static com.spotify.helios.common.descriptors.Job.EMPTY_CAPS;
+import static com.spotify.helios.common.descriptors.Job.EMPTY_COMMAND;
+import static com.spotify.helios.common.descriptors.Job.EMPTY_ENV;
+import static com.spotify.helios.common.descriptors.Job.EMPTY_HOSTNAME;
+import static net.sourceforge.argparse4j.impl.Arguments.storeTrue;
 
 import com.google.common.base.Function;
 import com.google.common.base.Joiner;
@@ -46,8 +52,17 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.TimeZone;
 import java.util.concurrent.ExecutionException;
+
+import io.fabric8.kubernetes.api.model.ContainerBuilder;
+import io.fabric8.kubernetes.api.model.EnvVar;
+import io.fabric8.kubernetes.api.model.EnvVarBuilder;
+import io.fabric8.kubernetes.api.model.PodSpec;
+import io.fabric8.kubernetes.api.model.PodSpecBuilder;
+import io.fabric8.kubernetes.api.model.SecurityContextBuilder;
+import net.sourceforge.argparse4j.inf.Argument;
 import net.sourceforge.argparse4j.inf.Namespace;
 import net.sourceforge.argparse4j.inf.Subparser;
 
@@ -109,15 +124,24 @@ public class JobInspectCommand extends WildcardJobCommand {
     return str;
   }
 
+  private final Argument asKubePodSpecArg;
+
   public JobInspectCommand(final Subparser parser) {
-    super(parser);
-    parser.help("print the configuration of a job");
+    this(parser, null);
   }
 
   public JobInspectCommand(final Subparser parser, final TimeZone timeZone) {
     super(parser);
-    DATE_FORMATTER.setTimeZone(timeZone);
+
+    if (timeZone != null) {
+      DATE_FORMATTER.setTimeZone(timeZone);
+    }
+
     parser.help("print the configuration of a job");
+
+    asKubePodSpecArg = parser.addArgument("--as-kube-pod-spec")
+        .action(storeTrue())
+        .help("Output job configuration as a Kubernetes pod spec");
   }
 
   @Override
@@ -125,6 +149,7 @@ public class JobInspectCommand extends WildcardJobCommand {
                              final PrintStream out, final boolean json, final JobId jobId,
                              final BufferedReader stdin)
       throws ExecutionException, InterruptedException {
+    final boolean asKubePodSpec = options.getBoolean(asKubePodSpecArg.getDest());
 
     final Map<JobId, Job> jobs = client.jobs(jobId.toString()).get();
     if (jobs.size() == 0) {
@@ -134,7 +159,8 @@ public class JobInspectCommand extends WildcardJobCommand {
 
     final Job job = Iterables.getOnlyElement(jobs.values());
 
-    if (json) {
+    if (asKubePodSpec) {
+    } else if (json) {
       out.println(Json.asPrettyStringUnchecked(job));
     } else {
       out.printf("Id: %s%n", job.getId());
@@ -202,5 +228,66 @@ public class JobInspectCommand extends WildcardJobCommand {
       output.add(quote(s));
     }
     return output;
+  }
+
+  private static PodSpec asKubePodSpec(final Job job) {
+    final PodSpecBuilder podSpecBuilder = new PodSpecBuilder();
+    final ContainerBuilder containerBuilder = new ContainerBuilder();
+    final SecurityContextBuilder securityContextBuilder = new SecurityContextBuilder();
+
+    if (!Objects.equals(EMPTY_CAPS, job.getAddCapabilities())) {
+      securityContextBuilder.editOrNewCapabilities()
+          .withAdd(Lists.newArrayList(job.getAddCapabilities()))
+          .endCapabilities();
+    }
+
+    if (!Objects.equals(EMPTY_COMMAND, job.getCommand())) {
+      containerBuilder.withCommand(job.getCommand());
+    }
+
+    //job.getCreated()
+    //job.getCreatingUser()
+
+    if (!Objects.equals(EMPTY_CAPS, job.getDropCapabilities())) {
+      securityContextBuilder.editOrNewCapabilities()
+          .withDrop(Lists.newArrayList(job.getDropCapabilities()))
+          .endCapabilities();
+    }
+
+    if (!Objects.equals(EMPTY_ENV, job.getEnv())) {
+      for (final Map.Entry<String, String> entry : job.getEnv().entrySet()) {
+        containerBuilder.addToEnv(new EnvVarBuilder()
+                                      .withName(entry.getKey())
+                                      .withValue(entry.getValue())
+                                      .build());
+      }
+    }
+
+    //job.getExpires()
+    //job.getGracePeriod()
+    //job.getHealthCheck()
+
+    if (!Objects.equals(EMPTY_HOSTNAME, job.getHostname())) {
+      podSpecBuilder.withHostname(job.getHostname());
+    }
+
+    //job.getId()
+
+    containerBuilder.withImage(job.getImage());
+
+    if (!Objects.equals(DEFAULT_NETWORK_MODE, job.getNetworkMode())) {
+      if (!"host".equals(job.getNetworkMode())) {
+        podSpecBuilder.withHostNetwork(true);
+      } else {
+        throw new UnsupportedOperationException("Kubernetes does not support networking mode "
+                                            + job.getNetworkMode());
+      }
+    }
+
+    return podSpecBuilder
+        .addNewContainerLike(containerBuilder.build())
+        .withSecurityContext(securityContextBuilder.build())
+        .endContainer()
+        .build();
   }
 }
